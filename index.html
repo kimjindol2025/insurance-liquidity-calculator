@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0E6B68">
+  <meta name="description" content="종신보험 사망보험금 유동화 대상 확인과 예상 지급액 계산, 보고서, 신청 전 확인사항을 한 번에 살펴보세요. 참고용 계산기입니다.">
+  <title>사망보험금 유동화 계산기 | 대상 확인 · 예상 수령액 · 보고서</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@600;700&display=swap">
+  <style>
+
+/* 레이아웃: 6쪽짜리 단계형 도구. 상단 단계 표시줄, 본문 한 쪽씩, 하단 이전/다음. 입력값은 쪽을 넘나들어도 유지된다. */
+:root{
+  --bg:#F3F6F8; --surface:#FFFFFF; --ink:#13222D; --muted:#566878; --line:#D8E0E6;
+  --accent:#0E6B68; --accent-ink:#FFFFFF; --accent-soft:#DDF0EE;
+  --good:#1B7F4B; --good-soft:#DFF3E7; --warn:#9A5B00; --warn-soft:#FBEDD0; --bad:#B3261E; --bad-soft:#FBE3E1;
+  --keep:#8A4B1F;
+  --f-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --f-num:"Noto Serif KR","Batang",serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E161C; --surface:#16212A; --ink:#E5EDF3; --muted:#9AABB9; --line:#2A3946;
+    --accent:#52C7C0; --accent-ink:#06211F; --accent-soft:#17383A;
+    --good:#5CCB8D; --good-soft:#163425; --warn:#F0B24A; --warn-soft:#3A2D12; --bad:#FF8A80; --bad-soft:#3E1B19;
+    --keep:#E0A36B; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E161C; --surface:#16212A; --ink:#E5EDF3; --muted:#9AABB9; --line:#2A3946;
+  --accent:#52C7C0; --accent-ink:#06211F; --accent-soft:#17383A;
+  --good:#5CCB8D; --good-soft:#163425; --warn:#F0B24A; --warn-soft:#3A2D12; --bad:#FF8A80; --bad-soft:#3E1B19;
+  --keep:#E0A36B; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 40px;word-break:keep-all}
+.wrap{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+h1{font-size:1.35rem;line-height:1.3;margin:0;text-wrap:balance}
+h2{font-size:1.2rem;margin:0;text-wrap:balance}
+h3{font-size:1rem;margin:0}
+p{margin:0}
+.lead{color:var(--muted)}
+.hint{font-size:.8rem;color:var(--muted)}
+.notice{border:1px solid var(--warn);background:var(--warn-soft);color:var(--ink);padding:10px 12px;border-radius:6px;font-size:.88rem}
+
+/* 단계 표시줄 */
+.steps{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;margin:0;padding:0;list-style:none}
+.steps button{width:100%;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;font-size:.7rem;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--muted);line-height:1.2}
+.steps button b{font-size:.95rem;color:var(--ink)}
+.steps button[aria-current=step]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.steps button[aria-current=step] b{color:var(--accent-ink)}
+
+.page{display:flex;flex-direction:column;gap:14px;min-width:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+label{display:flex;flex-direction:column;gap:4px;font-size:.85rem;color:var(--muted);min-width:0}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:9px 10px;min-width:0;width:100%}
+input[type=range]{padding:0;accent-color:var(--accent)}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+textarea{min-height:84px;resize:vertical}
+.rowline{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+button{font:inherit;cursor:pointer;border-radius:6px;padding:9px 14px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+button[aria-pressed=true]{background:var(--accent-soft);border-color:var(--accent);font-weight:600}
+button:disabled{opacity:.45;cursor:not-allowed}
+.pagenav{display:flex;justify-content:space-between;gap:10px;margin-top:4px}
+
+.dl{display:grid;grid-template-columns:minmax(0,9.5em) minmax(0,1fr);gap:8px 14px;margin:0}
+.dl dt{font-weight:600}
+.dl dd{margin:0;color:var(--muted)}
+@media (max-width:480px){.dl{grid-template-columns:1fr;gap:2px}.dl dd{margin-bottom:8px}}
+
+.verdict{border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.verdict .t{font-weight:600;font-size:1.05rem}
+.verdict.ok{background:var(--good-soft);border:1px solid var(--good)}
+.verdict.cond{background:var(--warn-soft);border:1px solid var(--warn)}
+.verdict.no{background:var(--bad-soft);border:1px solid var(--bad)}
+.verdict.unk{background:var(--accent-soft);border:1px solid var(--accent)}
+ul.checks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+ul.checks li{display:grid;grid-template-columns:3.4em minmax(0,1fr);gap:8px;align-items:start;font-size:.9rem}
+.tag{font-size:.74rem;font-weight:600;border-radius:4px;padding:1px 6px;text-align:center;border:1px solid currentColor}
+.tag.y{color:var(--good)}.tag.n{color:var(--bad)}.tag.q{color:var(--warn)}
+ul.plain{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px}
+
+.big{font-family:var(--f-num);font-size:1.9rem;line-height:1.2;font-weight:700;font-variant-numeric:tabular-nums;color:var(--accent)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
+.kpi .l{font-size:.8rem;color:var(--muted)}
+.kpi .v{font-family:var(--f-num);font-size:1.25rem;font-weight:700;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:.78rem;color:var(--muted)}
+.keep .v{color:var(--keep)}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px;max-height:340px}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:.85rem}
+th,td{padding:6px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{position:sticky;top:0;background:var(--surface);font-weight:600;color:var(--muted)}
+td.bar{min-width:120px;text-align:left}
+.bar i{display:block;height:8px;background:var(--accent);border-radius:2px;min-width:2px}
+.death{border-left:3px solid var(--keep);padding:2px 0 2px 12px;display:flex;flex-direction:column;gap:4px}
+details{border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:10px 14px}
+summary{cursor:pointer;font-weight:600}
+.src{font-size:.82rem;color:var(--muted)}
+.src a{color:var(--accent)}
+.err{color:var(--bad);font-size:.85rem}
+.locked{opacity:.5}
+.report h3{margin-top:6px;border-top:1px solid var(--line);padding-top:12px}
+.report .head{display:flex;flex-direction:column;gap:2px}
+.advice{display:flex;flex-direction:column;gap:10px;margin:0;padding:0;list-style:none}
+.advice li{border-left:3px solid var(--accent);padding:2px 0 2px 12px}
+.advice li.w{border-left-color:var(--warn)}
+.advice li b{display:block}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.fact{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--bg)}
+.fact .v{font-family:var(--f-num);font-weight:700;font-size:1.15rem}
+.fact .l{font-size:.78rem;color:var(--muted)}
+
+
+/* 배포형 단일 웹페이지: 원본 계산 로직과 안내 문구를 그대로 유지합니다. */
+html { scroll-behavior: smooth; }
+[hidden]:not([hidden="until-found"]) { display: none !important; }
+.wrap { max-width: 780px; }
+.steps {
+  position: sticky;
+  z-index: 30;
+  top: 0;
+  padding: 8px 0;
+  background: var(--bg);
+}
+.steps button { min-height: 50px; }
+.panel { border-radius: 14px; }
+.pagenav { padding-bottom: max(6px, env(safe-area-inset-bottom, 0px)); }
+@media (min-width: 600px) {
+  body { padding-top: 22px; }
+  .panel { padding: 20px; }
+  h1 { font-size: 1.65rem; }
+}
+@media print {
+  body { background: white !important; color: black !important; padding: 0; }
+  .steps, .pagenav, .rowline, .notice, .hint, .page:not(#pg5) { display: none !important; }
+  #pg5 { display: block !important; }
+  .wrap { max-width: none; }
+  .panel { border: 0; box-shadow: none; }
+  .tablewrap { max-height: none; overflow: visible; }
+  * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+}
+
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <ol class="steps" id="steps" aria-label="진행 단계"></ol>
+
+  <!-- 1쪽 설명 -->
+  <section class="page" id="pg1">
+    <h1>사망보험금 유동화 계산기</h1>
+    <p class="lead">살아 있는 동안 종신보험의 사망보험금 일부를 줄이고, 그만큼을 연금처럼 나눠 받는 제도입니다. 내 계약이 대상인지 확인하고, 받을 금액을 어림해 보고, 결과 보고서와 조언까지 한 번에 봅니다.</p>
+    <div class="panel">
+      <h3>이렇게 진행해요</h3>
+      <ul class="plain">
+        <li><b>2쪽 리서치</b> 제도와 약관 요지, 실제 신청 현황을 정리했습니다.</li>
+        <li><b>3쪽 대상 확인</b> 리서치에서 나온 요건으로 내 계약을 판별합니다.</li>
+        <li><b>4쪽 계산기</b> 대상이면 받을 연금액을 계산합니다.</li>
+        <li><b>5쪽 결과 보고서</b> 입력과 결과를 한 장으로 모읍니다.</li>
+        <li><b>6쪽 조언</b> 내 결과에 맞춰 신청 전에 따져 볼 점을 알려 줍니다.</li>
+      </ul>
+    </div>
+    <p class="notice"><strong>참고용입니다.</strong> 실제 지급액은 상품별 해약환급금으로 정해져 이 화면의 숫자와 다릅니다. 신청 전에 보험사가 주는 비교안내표로 확인하세요. 입력한 내용은 이 화면 안에서만 계산하고 저장하지 않습니다.</p>
+    <div><button class="primary" type="button" data-go="2">리서치 보기</button></div>
+  </section>
+
+  <!-- 2쪽 리서치 -->
+  <section class="page" id="pg2" hidden>
+    <h2>리서치 요약</h2>
+    <p class="hint">2026년 11월 1일 기준. 금융위원회 자료와 언론 보도를 대조했습니다.</p>
+    <div class="facts">
+      <div class="fact"><div class="v">60만건</div><div class="l">대상 계약, 가입금액 25.6조원</div></div>
+      <div class="fact"><div class="v">3,300여건</div><div class="l">누적 신청(8월 말), 대상의 1% 미만</div></div>
+      <div class="fact"><div class="v">월 34만원</div><div class="l">올해 상반기 신청자 첫해 평균</div></div>
+    </div>
+    <div class="panel">
+      <h3>제도 개요</h3>
+      <ul class="plain">
+        <li>2025년 10월 30일 5개 생보사(삼성·한화·교보·신한라이프·KB라이프)가 먼저 시작했고, 2026년 1월 2일부터 대상 계약이 있는 19개 생보사로 넓어졌습니다.</li>
+        <li>처음에는 영업점과 고객센터에서만 신청할 수 있었고, 이후 화상상담과 콜센터로도 신청할 수 있게 됐습니다. 월 단위로 받는 방식도 도입됐습니다.</li>
+        <li>간병·요양 서비스로 받는 서비스형 상품은 출시 일정이 확정되지 않았습니다.</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>대상 요건</h3>
+      <ul class="plain">
+        <li>계약자 만 55세 이상, 소득·재산 요건 없음</li>
+        <li>금리확정형 종신보험, 사망보험금 9억원 이하</li>
+        <li>보험료 납입 완료, 계약기간과 납입기간 각 10년 이상</li>
+        <li>계약자와 피보험자가 같음</li>
+        <li>신청 시점에 약관대출 잔액 없음</li>
+        <li>제외: 변액, 금리연동형, 단기납 종신, CI 선지급·중도급부 상품, 손해보험사 상품</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>받는 돈은 이렇게 정해집니다</h3>
+      <ul class="plain">
+        <li>유동화 비율은 사망보장을 얼마나 줄일지를 뜻합니다. 90%를 골라도 사망보험금의 90%를 받는 게 아닙니다.</li>
+        <li>실제로 받는 돈은 줄어든 만큼의 해약환급금입니다. 비율을 기간으로 나눈 만큼 매년 감액됩니다. 80%를 20년으로 하면 해마다 4%입니다.</li>
+        <li>금리확정형은 해약환급금이 해마다 늘어 지급액도 커집니다. 공식 예시(1억원, 60%, 20년, 65세 시작)는 총 3,745만원을 받고 4,000만원이 남습니다.</li>
+        <li>같은 1억원 계약도 상품 이율, 시작 나이, 비율, 기간에 따라 달라집니다.</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>바로잡을 점</h3>
+      <ul class="plain">
+        <li>"1억원을 유동화해도 월 30만원대"라는 표현은 정확하지 않습니다. 월 34만원은 모든 신청자의 평균이고, 1억원 계약의 공식 예시는 월 12만~19만원 수준입니다.</li>
+        <li>신청 후에도 되돌릴 수 없는 것은 감액된 사망보장입니다. 중단과 재신청은 가능합니다.</li>
+      </ul>
+    </div>
+    <details>
+      <summary>약관에서 확인할 조항(금융위 Q&A 요지)</summary>
+      <p class="hint" style="margin-top:8px">약관 원문이 아니라 금융위원회 Q&A와 보도자료의 요지입니다. 내 증권의 유동화 특약과 보험사 안내문에서 같은 내용을 찾아 대조하세요.</p>
+      <dl class="dl" style="margin-top:10px">
+        <dt>재원과 한도</dt><dd>재원은 해약환급금입니다. 사망 시 받을 사망보험금보다 많이 받을 수 없습니다.</dd>
+        <dt>지급 구조</dt><dd>일시금은 불가합니다. 기간은 연 단위 최소 2년, 비율은 최대 90%입니다. 받는 금액의 합계는 낸 보험료보다 많아야 합니다.</dd>
+        <dt>유동화 중 제한</dt><dd>추가납입, 중도인출, 추가감액은 쓸 수 없습니다. 비율이나 기간을 바꾸려면 중단하고 다시 신청합니다.</dd>
+        <dt>지급 중 사망</dt><dd>설정한 조건에 따라 남은 사망보험금이 지급되고 계약은 끝납니다.</dd>
+        <dt>철회와 취소</dt><dd>수령일 15일, 신청일 30일 중 먼저 오는 날까지 철회할 수 있고, 설명 의무 위반 시 3개월 안에 취소할 수 있습니다.</dd>
+        <dt>수익자 동의</dt><dd>필요하지 않습니다.</dd>
+        <dt>세금</dt><dd>유동화하면 저축성보험으로 보며, 종신보험 월 보험료에 비율을 곱한 값과 다른 저축성보험 월 납입액의 합이 150만원 이하이면 비과세로 안내됐습니다.</dd>
+      </dl>
+    </details>
+    <details>
+      <summary>신청이 저조한 이유</summary>
+      <ul class="plain" style="margin-top:8px">
+        <li>받는 돈이 해약환급금이라 기대보다 적습니다.</li>
+        <li>약관대출이 있으면 신청이 막힙니다.</li>
+        <li>종신보험은 가족을 위해 든 상품이라는 인식이 강해 90%를 쓰면 남는 몫이 10%뿐입니다.</li>
+        <li>월평균 신청이 지난해 말 약 640건에서 올해 상반기 약 238건으로 줄었습니다.</li>
+      </ul>
+    </details>
+    <p class="src">출처: <a href="https://fsc.go.kr/po020201/85930" target="_blank" rel="noopener">금융위원회 Q&A</a>, <a href="https://www.fsc.go.kr/no010101/85929" target="_blank" rel="noopener">금융위원회 보도자료(2025.12.23)</a>, <a href="https://www.kmib.co.kr/article/20261018501533" target="_blank" rel="noopener">국민일보</a>, <a href="https://www.imaeil.com/page/view/2026100307150622604" target="_blank" rel="noopener">매일신문</a>, <a href="https://www.fnnews.com/news/202609151418224131" target="_blank" rel="noopener">파이낸셜뉴스</a>, <a href="https://www.asiae.co.kr/article/2025090211204456329" target="_blank" rel="noopener">아시아경제</a>, <a href="https://www.fnnews.com/news/202503111026250883" target="_blank" rel="noopener">금융당국 일문일답</a></p>
+  </section>
+
+  <!-- 3쪽 대상 확인 -->
+  <section class="page" id="pg3" hidden>
+    <h2>대상인지 확인</h2>
+    <p class="lead">2쪽의 요건으로 판별합니다. 칸에 들어 있는 값은 예시이니 내 계약 값으로 바꿔 주세요.</p>
+    <div class="panel">
+      <div class="grid">
+        <label for="age">계약자 만 나이<input id="age" type="number" inputmode="numeric" min="20" max="110" value="60"></label>
+        <label for="ptype">보험 종류
+          <select id="ptype">
+            <option value="fixed" selected>금리확정형 종신보험</option>
+            <option value="notified">보험사에서 대상 안내 문자를 받았다</option>
+            <option value="unknown">종류를 잘 모른다</option>
+            <option value="rate">금리연동형 종신보험</option>
+            <option value="var">변액종신보험</option>
+            <option value="short">단기납 종신보험</option>
+            <option value="ci">CI 선지급형 포함 종신보험</option>
+            <option value="nonlife">손해보험사 상품</option>
+          </select></label>
+        <label for="db">사망보험금(만원)<input id="db" type="number" inputmode="numeric" min="0" step="100" value="10000"></label>
+        <label for="term">계약기간(년)<input id="term" type="number" inputmode="numeric" min="0" value="30"></label>
+        <label for="pay">납입기간(년)<input id="pay" type="number" inputmode="numeric" min="0" value="20"></label>
+        <label for="paid">보험료 납입<select id="paid"><option value="y" selected>모두 납입 완료</option><option value="n">아직 납입 중</option></select></label>
+        <label for="same">계약자와 피보험자<select id="same"><option value="y" selected>같은 사람</option><option value="n">다른 사람</option></select></label>
+        <label for="loan">약관대출 잔액<select id="loan"><option value="n" selected>없음</option><option value="y">있음</option></select></label>
+      </div>
+      <div id="verdict" class="verdict" aria-live="polite"></div>
+      <ul id="checks" class="checks"></ul>
+      <p class="hint">증권에서 금리확정형인지, 약관대출 잔액이 얼마인지 확인하세요. 보험사 앱이나 고객센터에서도 대상 여부를 알려 줍니다.</p>
+    </div>
+  </section>
+
+  <!-- 4쪽 계산기 -->
+  <section class="page" id="pg4" hidden>
+    <h2>받을 금액 계산</h2>
+    <div id="lockmsg" class="notice" hidden>3쪽에서 대상(또는 대출 상환 후 대상)으로 판별되면 계산기를 쓸 수 있습니다. <button type="button" data-go="3" style="margin-left:6px">대상 확인으로</button></div>
+    <div id="calc" class="panel">
+      <div class="rowline" role="group" aria-label="계산 방식">
+        <button id="m-approx" type="button" aria-pressed="true">근사 계산</button>
+        <button id="m-table" type="button" aria-pressed="false">비교안내표 입력</button>
+        <button id="exA" type="button">공식 예시 넣기</button>
+      </div>
+      <div class="grid">
+        <label for="ratio">유동화 비율 <output id="ratioOut">60%</output><input id="ratio" type="range" min="10" max="90" step="10" value="60"></label>
+        <label for="n" id="nlabel"><span id="ntxt">지급기간(년)</span><input id="n" type="number" inputmode="numeric" min="2" max="45" value="20"></label>
+        <label for="startAge">유동화 시작 나이<input id="startAge" type="number" inputmode="numeric" min="55" max="100" value="65"></label>
+        <label for="paidTotal">그동안 낸 보험료 합계(만원, 선택)<input id="paidTotal" type="number" inputmode="numeric" min="0" step="10" placeholder="예: 3624"></label>
+      </div>
+      <div id="approxBox" class="grid">
+        <label for="s0">시작 시점 해약환급률(%)<input id="s0" type="number" inputmode="decimal" min="1" max="100" step="0.1" value="48.8"></label>
+        <label for="g">해약환급률 연 증가율(%)<input id="g" type="number" inputmode="decimal" min="0" max="8" step="0.1" value="2.5"></label>
+        <p class="hint" style="grid-column:1/-1">해약환급률은 시작 나이 시점의 해약환급금을 사망보험금으로 나눈 값이며, 증권의 해약환급금표에서 찾습니다. 기본값은 공식 예시(1억원, 65세 시작)에 맞춘 예시입니다. 증가율은 그 예시에서 역산한 약 2.5%이고, 결과에는 1.5%와 4%로 계산한 범위가 함께 나옵니다.</p>
+      </div>
+      <div id="tableBox" hidden>
+        <label for="tbl">비교안내표의 해마다 받는 금액(만원), 쉼표나 줄바꿈으로 구분
+          <textarea id="tbl" placeholder="예: 146, 150, 154, 158 ..."></textarea></label>
+        <p class="hint">입력한 금액의 개수가 지급기간이 됩니다. 세전 금액을 넣으세요.</p>
+      </div>
+      <p id="calcErr" class="err" hidden></p>
+      <div class="kpis" aria-live="polite">
+        <div class="kpi"><div class="l">첫해 받는 돈</div><div class="big" id="k-first">-</div><div class="s" id="k-month"></div></div>
+        <div class="kpi"><div class="l">지급기간 총 수령액</div><div class="big" id="k-total">-</div><div class="s" id="k-range"></div></div>
+        <div class="kpi keep"><div class="l">유족에게 남는 사망보험금</div><div class="v" id="k-keep">-</div><div class="s" id="k-keepnote"></div></div>
+        <div class="kpi"><div class="l">내가 받은 돈 + 유족 몫</div><div class="v" id="k-sum">-</div><div class="s" id="k-diff"></div></div>
+      </div>
+      <p id="paidCheck" class="hint"></p>
+      <div class="death">
+        <label for="dyear">지급 시작 후 <output id="dyearOut">10</output>년째에 사망한다면<input id="dyear" type="range" min="0" max="20" step="1" value="10"></label>
+        <p id="deathTxt"></p>
+      </div>
+      <details open>
+        <summary>해마다 받는 금액</summary>
+        <div class="tablewrap" style="margin-top:10px"><table>
+          <thead><tr><th>연차</th><th>나이</th><th>받는 돈(만원)</th><th>누계(만원)</th><th>비중</th></tr></thead>
+          <tbody id="rows"></tbody></table></div>
+      </details>
+      <details>
+        <summary>세금 확인(월 150만원 기준)</summary>
+        <div class="grid" style="margin-top:10px">
+          <label for="mprem">종신보험 월 납입 보험료(만원)<input id="mprem" type="number" inputmode="decimal" min="0" step="0.1" value="15.1"></label>
+          <label for="msave">다른 저축성보험 월 납입액 합계(만원)<input id="msave" type="number" inputmode="decimal" min="0" step="1" value="0"></label>
+        </div>
+        <p id="taxTxt" style="margin-top:10px"></p>
+      </details>
+    </div>
+  </section>
+
+  <!-- 5쪽 보고서 -->
+  <section class="page" id="pg5" hidden>
+    <h2>결과 보고서</h2>
+    <div class="panel report" id="report"></div>
+    <div class="rowline"><button id="copyRep" type="button" class="primary">보고서 복사</button><button id="printRep" type="button">보고서 인쇄 / PDF 저장</button><span id="copyMsg" class="hint"></span></div>
+    <textarea id="copyBox" hidden readonly style="min-height:160px"></textarea>
+  </section>
+
+  <!-- 6쪽 조언 -->
+  <section class="page" id="pg6" hidden>
+    <h2>조언</h2>
+    <p class="lead">입력하신 결과에 맞춰 신청 전에 따져 볼 점을 정리했습니다.</p>
+    <div class="panel">
+      <h3>내 결과에 맞춘 조언</h3>
+      <ul class="advice" id="advMine"></ul>
+    </div>
+    <div class="panel">
+      <h3>누구에게나 해당하는 조언</h3>
+      <ul class="advice">
+        <li><b>비교안내표가 최종 기준입니다.</b>이 계산기는 방향을 보는 용도입니다. 신청 전에 비율과 기간별 금액을 나란히 놓은 보험사 표를 받아 해마다 받는 금액, 끝나는 시점, 남는 사망보험금 세 가지를 비교하세요.</li>
+        <li><b>유족 몫부터 정하세요.</b>받은 돈과 남은 사망보험금을 합쳐도 원래 사망보험금보다 작습니다. 종신보험을 가족을 위해 들었다면 가족과 먼저 상의하세요.</li>
+        <li><b>쓸 목적을 먼저 정하세요.</b>매달 생활비는 기간을 길게, 병원비나 간병비처럼 몇 해 안에 큰돈이 필요하면 짧게 잡습니다. 시작을 늦출수록 지급액이 커집니다.</li>
+        <li><b>다른 방법과 비교하세요.</b>해약해서 받는 돈, 연금전환 특약, 약관대출과 비교해 이 방법이 맞는지 보험사에 물어보세요.</li>
+        <li><b>되돌릴 수 없는 점을 기억하세요.</b>줄어든 사망보험금은 복구되지 않습니다. 철회는 수령일 15일, 신청일 30일 중 먼저 오는 날까지입니다. 설명을 제대로 듣지 못했다면 3개월 안에 취소할 수 있습니다.</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>신청 전 체크리스트</h3>
+      <ul class="plain">
+        <li>보험사에서 비교안내표를 받았다</li>
+        <li>증권에서 금리확정형과 예정이율을 확인했다</li>
+        <li>약관대출 잔액을 확인했다</li>
+        <li>세금 처리를 보험사에 확인했다</li>
+        <li>가족과 남는 사망보험금에 대해 이야기했다</li>
+      </ul>
+    </div>
+    <p class="hint">일반 정보이며 특정 상품 신청을 권하지 않습니다. 개별 계약은 보험사와 전문가에게 확인하세요.</p>
+  </section>
+
+  <div class="pagenav">
+    <button id="prev" type="button">이전</button>
+    <button id="next" type="button" class="primary">다음</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id)};
+  var NAMES=['설명','리서치','대상확인','계산기','보고서','조언'];
+  var cur=1,mode='approx',J=null;
+
+  function fmt(m){
+    m=Math.round(m);
+    if(m>=10000){var e=Math.floor(m/10000),r=m%10000;return e+'억'+(r?' '+r.toLocaleString('ko-KR')+'만':'')+'원';}
+    return m.toLocaleString('ko-KR')+'만원';
+  }
+  function num(id){var v=parseFloat($(id).value);return isNaN(v)?0:v;}
+  function sum(a,upto){var t=0;for(var i=0;i<upto&&i<a.length;i++)t+=a[i];return t;}
+  function series(n,r,db,s0,g){var o=[],b=r/n*db*s0;for(var k=0;k<n;k++)o.push(b*Math.pow(1+g,k));return o;}
+
+  /* ---- 대상 판별 ---- */
+  function judge(){
+    var age=num('age'),pt=$('ptype').value,db=num('db'),term=num('term'),pay=num('pay');
+    var items=[],hard=0,loanOnly=false,unk=false;
+    function add(s,t){items.push({s:s,t:t});}
+    if(age>=55)add('y','만 '+age+'세로 나이 요건(만 55세 이상)을 채웁니다.');
+    else{add('n','만 55세부터 신청할 수 있습니다. '+(55-age)+'년 뒤부터 가능합니다.');hard++;}
+    if(pt==='fixed')add('y','금리확정형 종신보험입니다.');
+    else if(pt==='notified')add('y','대상 안내 문자를 받았다면 금리확정형 요건은 보험사가 이미 확인한 것입니다. 이후 약관대출을 받았다면 아래 항목에서 막힙니다.');
+    else if(pt==='unknown'){add('q','증권이나 보험사 앱에서 금리확정형인지 확인해 주세요.');unk=true;}
+    else{
+      var why={rate:'금리연동형은 대상이 아닙니다.',var:'변액종신보험은 대상이 아닙니다.',short:'단기납 종신보험은 대상이 아닙니다.',ci:'CI 선지급이나 중도급부가 붙은 상품은 대상에서 빠질 수 있습니다.',nonlife:'손해보험사 상품은 대상이 아닙니다. 생명보험사 종신보험만 해당합니다.'};
+      add('n',why[pt]);hard++;
+    }
+    if(db>0&&db<=90000)add('y','사망보험금 '+fmt(db)+'으로 9억원 이하입니다.');
+    else if(db>90000){add('n','사망보험금이 9억원을 넘으면 대상이 아닙니다.');hard++;}
+    else{add('q','사망보험금을 입력해 주세요.');unk=true;}
+    if(term>=10&&pay>=10)add('y','계약기간 '+term+'년, 납입기간 '+pay+'년으로 각각 10년 이상입니다.');
+    else{add('n','계약기간과 납입기간이 각각 10년 이상이어야 합니다.');hard++;}
+    if($('paid').value==='y')add('y','보험료 납입이 끝났습니다.');
+    else{add('n','보험료 납입이 끝난 계약만 신청할 수 있습니다.');hard++;}
+    if($('same').value==='y')add('y','계약자와 피보험자가 같습니다.');
+    else{add('n','계약자와 피보험자가 같아야 합니다.');hard++;}
+    if($('loan').value==='n')add('y','약관대출 잔액이 없습니다.');
+    else{add('q','약관대출 잔액이 있으면 신청할 수 없습니다. 다 갚으면 바로 신청할 수 있습니다.');loanOnly=true;}
+    var cls,title,body,unlocked=false,key;
+    if(hard>0){key='no';cls='no';title='지금은 대상이 아닙니다';body='막힌 항목을 확인하세요. 요건이 바뀌면 다시 판별할 수 있습니다.';}
+    else if(unk){key='unk';cls='unk';title='확인이 더 필요합니다';body='모르는 항목을 확인한 뒤 다시 입력해 주세요.';}
+    else if(loanOnly){key='cond';cls='cond';title='대출을 갚으면 대상입니다';body='약관대출을 상환하면 다른 요건은 모두 채웁니다. 계산은 상환했다고 가정하고 해 볼 수 있습니다.';unlocked=true;}
+    else{key='ok';cls='ok';title='대상입니다';body='4쪽에서 받을 금액을 어림해 보세요. 최종 대상 여부는 보험사가 확인합니다.';unlocked=true;}
+    J={key:key,cls:cls,title:title,body:body,items:items,unlocked:unlocked,loanOnly:loanOnly};
+    return J;
+  }
+  function renderJudge(){
+    judge();
+    var v=$('verdict');v.className='verdict '+J.cls;
+    v.innerHTML='<span class="t">'+J.title+'</span><span>'+J.body+'</span>';
+    var ul=$('checks');ul.innerHTML='';
+    J.items.forEach(function(it){
+      var li=document.createElement('li');
+      var tag=document.createElement('span');tag.className='tag '+it.s;tag.textContent=it.s==='y'?'충족':it.s==='n'?'미충족':'확인';
+      var tx=document.createElement('span');tx.textContent=it.t;
+      li.appendChild(tag);li.appendChild(tx);ul.appendChild(li);
+    });
+    renderCalc();
+  }
+
+  /* ---- 계산 모델 ---- */
+  function model(){
+    var db=num('db'),r=num('ratio')/100,start=num('startAge')||65,arr=[],lo=null,hi=null,n,err='';
+    if(mode==='approx'){
+      n=Math.max(2,Math.round(num('n')));
+      var s0=num('s0')/100,g=num('g')/100;
+      if(!(db>0)||!(s0>0))err='사망보험금과 해약환급률을 입력해 주세요.';
+      else{arr=series(n,r,db,s0,g);lo=sum(series(n,r,db,s0,0.015),n);hi=sum(series(n,r,db,s0,0.04),n);}
+    }else{
+      var raw=$('tbl').value.split(/[\s,]+/).map(parseFloat).filter(function(x){return !isNaN(x)&&x>=0;});
+      if(raw.length<2){n=Math.max(2,Math.round(num('n')));err='비교안내표의 금액을 2개 이상 입력해 주세요.';}
+      else{arr=raw;n=raw.length;}
+    }
+    var total=sum(arr,arr.length),keep=db*(1-r);
+    return {db:db,r:r,start:start,arr:arr,lo:lo,hi:hi,n:n,err:err,total:total,keep:keep,first:arr.length?arr[0]:0,both:total+keep,diff:total+keep-db,ok:arr.length>0};
+  }
+  function deathAt(M,m){
+    var got=sum(M.arr,m),rest=M.db*(1-M.r*m/(M.arr.length||M.n));
+    return {got:got,rest:rest,all:got+rest,less:M.db-got-rest};
+  }
+  function taxEff(){return num('mprem')*(num('ratio')/100)+num('msave');}
+
+  function renderCalc(){
+    $('calc').classList.toggle('locked',!J.unlocked);
+    if(J.unlocked)$('calc').removeAttribute('inert');else $('calc').setAttribute('inert','');
+    $('lockmsg').hidden=J.unlocked;
+    var M=model();
+    $('ratioOut').textContent=Math.round(M.r*100)+'%';
+    var err=$('calcErr');err.hidden=!M.err;err.textContent=M.err;
+    if(mode==='table'&&M.ok)$('n').value=M.arr.length;
+    $('n').readOnly=(mode==='table');
+    $('ntxt').textContent=mode==='table'?'지급기간(년, 입력한 금액 개수)':'지급기간(년)';
+    $('k-first').textContent=M.ok?fmt(M.first):'-';
+    $('k-month').textContent=M.ok?'월 환산 약 '+fmt(M.first/12):'';
+    $('k-total').textContent=M.ok?fmt(M.total):'-';
+    $('k-range').textContent=(M.lo!==null&&M.ok)?'증가율 1.5%~4%이면 '+fmt(M.lo)+' ~ '+fmt(M.hi):(mode==='table'&&M.ok?'입력한 금액의 합계':'');
+    $('k-keep').textContent=fmt(M.keep);
+    $('k-keepnote').textContent='사망보험금의 '+Math.round((1-M.r)*100)+'%';
+    $('k-sum').textContent=M.ok?fmt(M.both):'-';
+    $('k-diff').textContent=M.ok?(M.diff<0?'유지했을 때보다 '+fmt(-M.diff)+' 적음':'유지했을 때와 같거나 많음'):'';
+    var pt=num('paidTotal'),pc=$('paidCheck');
+    if(pt>0&&M.ok){var pct=Math.round(M.total/pt*100);pc.textContent='총 수령액은 낸 보험료의 약 '+pct+'%입니다. '+(pct>100?'받는 돈이 낸 보험료보다 많아야 한다는 요건을 충족하는 수준입니다.':'낸 보험료보다 적으면 요건에 맞지 않을 수 있으니 비교안내표로 확인하세요.');}
+    else pc.textContent='';
+    var ds=$('dyear');ds.max=String(M.arr.length||M.n);if(+ds.value>+ds.max)ds.value=ds.max;
+    var m=Math.round(+ds.value);$('dyearOut').textContent=m;
+    if(M.ok){var d=deathAt(M,m);
+      $('deathTxt').textContent=m===0?'시작 직후라면 유족은 사망보험금 '+fmt(M.db)+'을 받습니다.':'그때까지 본인이 받은 돈 '+fmt(d.got)+', 유족이 받는 남은 사망보험금 '+fmt(d.rest)+'입니다. 합계 '+fmt(d.all)+', 유지했을 때보다 '+fmt(d.less)+' 적습니다.';
+    }else $('deathTxt').textContent='';
+    var tb=$('rows');tb.innerHTML='';var mx=0;M.arr.forEach(function(x){if(x>mx)mx=x;});var cum=0;
+    M.arr.forEach(function(x,i){
+      cum+=x;var tr=document.createElement('tr');
+      function td(t){var e=document.createElement('td');e.textContent=t;return e;}
+      tr.appendChild(td((i+1)+'년차'));tr.appendChild(td(Math.round(M.start+i)+'세'));
+      tr.appendChild(td(Math.round(x).toLocaleString('ko-KR')));tr.appendChild(td(Math.round(cum).toLocaleString('ko-KR')));
+      var b=document.createElement('td');b.className='bar';var bi=document.createElement('i');bi.style.width=(mx?Math.round(x/mx*100):0)+'%';b.appendChild(bi);tr.appendChild(b);tb.appendChild(tr);
+    });
+    var eff=taxEff();
+    $('taxTxt').textContent='유동화 반영 월 납입액 '+(Math.round(eff*10)/10).toLocaleString('ko-KR')+'만원입니다. '+(eff<=150?'150만원 이하라 비과세 기준 안에 있습니다.':'150만원을 넘어 과세 대상이 될 수 있습니다.');
+  }
+
+  /* ---- 5쪽 보고서 ---- */
+  var repText='';
+  function renderReport(){
+    judge();
+    var M=model(),root=$('report'),L=[],H='';
+    var today='2026-11-01';
+    L.push('사망보험금 유동화 참고 보고서 ('+today+' 기준)');
+    H+='<div class="head"><h3 style="border:0;padding:0;margin:0">사망보험금 유동화 참고 보고서</h3><span class="hint">'+today+' 기준 · 참고용</span></div>';
+    var unmet=J.items.filter(function(i){return i.s!=='y';});
+    H+='<h3>1. 대상 판별</h3><div class="verdict '+J.cls+'"><span class="t">'+J.title+'</span><span>'+J.body+'</span></div>';
+    L.push('','1. 대상 판별',J.title+' - '+J.body);
+    if(unmet.length){H+='<ul class="plain">'+unmet.map(function(i){return '<li>'+i.t+'</li>';}).join('')+'</ul>';unmet.forEach(function(i){L.push('- '+i.t);});}
+    var asm='사망보험금 '+fmt(M.db)+', 유동화 비율 '+Math.round(M.r*100)+'%, 지급기간 '+M.n+'년, 시작 나이 '+M.start+'세';
+    if(mode==='approx')asm+=', 시작 해약환급률 '+num('s0')+'%, 증가율 '+num('g')+'%';else asm+=', 비교안내표 금액 입력';
+    H+='<h3>2. 입력 가정</h3><p>'+asm+'</p>';L.push('','2. 입력 가정',asm);
+    if(!J.unlocked||!M.ok){
+      H+='<h3>3. 계산 결과</h3><p class="lead">'+(J.unlocked?'계산에 필요한 값이 비어 있습니다. 4쪽에서 입력해 주세요.':'대상으로 판별되지 않아 계산하지 않았습니다.')+'</p>';
+      L.push('','3. 계산 결과',J.unlocked?'계산에 필요한 값이 비어 있습니다.':'대상으로 판별되지 않아 계산하지 않았습니다.');
+    }else{
+      var rng=(M.lo!==null)?' (증가율 1.5~4%이면 '+fmt(M.lo)+' ~ '+fmt(M.hi)+')':'';
+      H+='<h3>3. 계산 결과</h3><div class="tablewrap"><table><tbody>'+
+        '<tr><td>첫해 받는 돈</td><td>'+fmt(M.first)+' (월 약 '+fmt(M.first/12)+')</td></tr>'+
+        '<tr><td>지급기간 총 수령액</td><td>'+fmt(M.total)+rng+'</td></tr>'+
+        '<tr><td>유족에게 남는 사망보험금</td><td>'+fmt(M.keep)+'</td></tr>'+
+        '<tr><td>받은 돈 + 유족 몫</td><td>'+fmt(M.both)+'</td></tr>'+
+        '<tr><td>유지했을 때와 차이</td><td>'+(M.diff<0?fmt(-M.diff)+' 적음':'같거나 많음')+'</td></tr></tbody></table></div>';
+      L.push('','3. 계산 결과','- 첫해 받는 돈: '+fmt(M.first)+' (월 약 '+fmt(M.first/12)+')','- 지급기간 총 수령액: '+fmt(M.total)+rng,'- 유족에게 남는 사망보험금: '+fmt(M.keep),'- 받은 돈 + 유족 몫: '+fmt(M.both),'- 유지했을 때와 차이: '+(M.diff<0?fmt(-M.diff)+' 적음':'같거나 많음'));
+      var pts=[1,Math.round(M.arr.length/2),M.arr.length].filter(function(v,i,a){return v>0&&a.indexOf(v)===i;});
+      H+='<h3>4. 사망 시점별 비교</h3><div class="tablewrap"><table><thead><tr><th>사망 시점</th><th>본인 누계</th><th>유족 몫</th><th>합계</th></tr></thead><tbody>';
+      L.push('','4. 사망 시점별 비교');
+      pts.forEach(function(m){var d=deathAt(M,m);
+        H+='<tr><td>'+m+'년째</td><td>'+fmt(d.got)+'</td><td>'+fmt(d.rest)+'</td><td>'+fmt(d.all)+'</td></tr>';
+        L.push('- '+m+'년째: 본인 '+fmt(d.got)+' + 유족 '+fmt(d.rest)+' = '+fmt(d.all));});
+      H+='</tbody></table></div>';
+      var eff=taxEff();
+      H+='<h3>5. 세금</h3><p>유동화 반영 월 납입액 '+(Math.round(eff*10)/10).toLocaleString('ko-KR')+'만원, '+(eff<=150?'150만원 이하로 비과세 기준 안에 있습니다.':'150만원을 넘어 과세 대상이 될 수 있습니다.')+'</p>';
+      L.push('','5. 세금','유동화 반영 월 납입액 '+(Math.round(eff*10)/10)+'만원, '+(eff<=150?'비과세 기준(150만원) 이내':'150만원 초과, 과세 가능'));
+    }
+    H+='<h3>한계</h3><ul class="plain"><li>실제 지급액은 상품별 해약환급금표로 정해집니다. 이 보고서의 숫자는 가정에 따른 추정입니다.</li><li>근사 계산의 증가율은 공식 예시 1건에서 역산한 값입니다.</li><li>최종 대상 여부와 세금은 가입한 보험사에서 확인하세요.</li></ul>';
+    L.push('','한계','- 실제 지급액은 상품별 해약환급금표로 정해집니다. 숫자는 가정에 따른 추정입니다.','- 최종 대상 여부와 세금은 가입한 보험사에서 확인하세요.');
+    root.innerHTML=H;repText=L.join('\n');
+  }
+
+  /* ---- 6쪽 조언 ---- */
+  function renderAdvice(){
+    judge();var M=model(),ul=$('advMine'),out=[];
+    function add(t,b,w){out.push({t:t,b:b,w:w});}
+    if(!J.unlocked){
+      if(J.key==='no')add('지금은 대상이 아닙니다','3쪽에서 미충족으로 나온 항목을 먼저 해결할 수 있는지 보세요. 나이나 납입 기간처럼 시간이 지나면 충족되는 항목도 있습니다. 그 사이 해약환급금, 연금전환 특약, 약관대출을 보험사에 문의해 비교해 보세요.',true);
+      else add('확인이 더 필요합니다','증권에서 금리확정형 여부를 확인하고 3쪽 입력을 마저 채워 주세요.',true);
+    }else{
+      if(J.loanOnly)add('약관대출을 먼저 정리하세요','대출 잔액이 있으면 신청이 막힙니다. 상환하면 바로 신청할 수 있지만, 상환 자금과 이자부터 따져 보세요.',true);
+      if(M.ok){
+        var keepPct=Math.round((1-M.r)*100);
+        if(M.r>=0.8)add('유족 몫이 '+keepPct+'%뿐입니다','비율이 높을수록 유족 몫이 줄어듭니다. 장례비와 정리 비용을 위해 일부를 남기는 비율을 비교안내표에서 같이 보세요.',true);
+        else add('유족 몫은 '+keepPct+'% 남습니다','비율이 낮아 유족 몫을 지키는 쪽입니다. 받는 돈이 필요한 만큼인지 생활비 계획과 맞춰 보세요.',false);
+        add('유지 대비 '+(M.diff<0?fmt(-M.diff)+' 적습니다':'차이가 없습니다'),'받은 돈과 유족 몫을 합쳐도 원래 사망보험금을 넘기 어렵습니다. 이 차이는 앞당겨 쓰는 비용이라고 보면 됩니다.',M.diff<0);
+        if(M.start<65)add('시작을 늦추면 더 받습니다','공식 예시에서 시작 나이를 55세에서 65세로 늦추면 연 평균 수령액이 약 1.5배가 됩니다. 당장 필요한 돈이 아니라면 시작 시점을 비교하세요.',false);
+        if(M.n<=5)add('짧은 기간은 목돈 용도입니다','기간이 짧으면 해마다 받는 돈은 커지지만 사망보장은 빨리 줄어듭니다. 병원비나 간병비처럼 쓸 곳이 정해졌는지 확인하세요.',false);
+        if(M.n>=20)add('긴 기간은 생활비 용도입니다','기간이 길면 해마다 받는 돈은 작지만 오래 이어집니다. 나이가 들수록 지급액이 커지는 구조를 비교안내표로 확인하세요.',false);
+        if(taxEff()>150)add('세금을 먼저 확인하세요','월 납입액 기준이 150만원을 넘어 이자소득세가 붙을 수 있습니다. 신청 전에 보험사에 세금 처리를 물어보세요.',true);
+        if(mode==='approx')add('근사 계산은 방향 확인용입니다','실제 금액은 비교안내표에서 확인하고, 4쪽에서 비교안내표 입력으로 다시 계산해 비교해 보세요.',false);
+      }
+    }
+    ul.innerHTML='';
+    out.forEach(function(o){var li=document.createElement('li');if(o.w)li.className='w';var b=document.createElement('b');b.textContent=o.t;li.appendChild(b);li.appendChild(document.createTextNode(o.b));ul.appendChild(li);});
+  }
+
+  /* ---- 쪽 이동 ---- */
+  function go(p,noscroll){
+    p=Math.max(1,Math.min(6,p));cur=p;
+    for(var i=1;i<=6;i++)$('pg'+i).hidden=(i!==p);
+    if(p===3)renderJudge();
+    if(p===4){judge();renderCalc();}
+    if(p===5)renderReport();
+    if(p===6)renderAdvice();
+    buildSteps();
+    $('prev').disabled=(p===1);$('next').hidden=(p===6);
+    $('next').textContent=p===1?'리서치 보기':p===2?'대상 확인하기':p===3?'계산기로':p===4?'보고서 보기':'조언 보기';
+    try{if(location.hash!=='#step-'+p)history.replaceState(null,'','#step-'+p);}catch(e){}
+    if(!noscroll)window.scrollTo(0,0);
+  }
+  function buildSteps(){
+    var ol=$('steps');ol.innerHTML='';
+    NAMES.forEach(function(nm,i){
+      var li=document.createElement('li'),b=document.createElement('button');b.type='button';
+      b.innerHTML='<b>'+(i+1)+'</b><span>'+nm+'</span>';
+      if(i+1===cur)b.setAttribute('aria-current','step');
+      b.addEventListener('click',function(){go(i+1)});li.appendChild(b);ol.appendChild(li);
+    });
+  }
+
+  /* ---- 이벤트 ---- */
+  ['age','ptype','db','term','pay','paid','same','loan'].forEach(function(id){$(id).addEventListener('input',renderJudge);$(id).addEventListener('change',renderJudge);});
+  ['ratio','n','startAge','paidTotal','s0','g','tbl','dyear','mprem','msave'].forEach(function(id){$(id).addEventListener('input',function(){judge();renderCalc();});});
+  function setMode(m){
+    mode=m;$('m-approx').setAttribute('aria-pressed',m==='approx');$('m-table').setAttribute('aria-pressed',m==='table');
+    $('approxBox').hidden=(m!=='approx');$('tableBox').hidden=(m!=='table');judge();renderCalc();
+  }
+  $('m-approx').addEventListener('click',function(){setMode('approx')});
+  $('m-table').addEventListener('click',function(){setMode('table')});
+  $('exA').addEventListener('click',function(){
+    $('db').value=10000;$('ratio').value=60;$('n').value=20;$('startAge').value=65;$('s0').value=48.8;$('g').value=2.5;$('paidTotal').value=3624;$('mprem').value=15.1;
+    $('age').value=Math.max(num('age'),65);setMode('approx');renderJudge();
+  });
+  $('prev').addEventListener('click',function(){go(cur-1)});
+  $('next').addEventListener('click',function(){go(cur+1)});
+  Array.prototype.forEach.call(document.querySelectorAll('[data-go]'),function(b){b.addEventListener('click',function(){go(parseInt(b.getAttribute('data-go'),10))});});
+  $('copyRep').addEventListener('click',function(){
+    var msg=$('copyMsg'),box=$('copyBox');
+    function fallback(){box.hidden=false;box.value=repText;box.focus();box.select();msg.textContent='아래 내용을 길게 눌러 복사하세요.';}
+    try{
+      if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(repText).then(function(){msg.textContent='복사했습니다.';box.hidden=true;},fallback);}
+      else fallback();
+    }catch(e){fallback();}
+  });
+  window.addEventListener('hashchange',function(){var m=/^#step-([1-6])$/.exec(location.hash);if(m&&+m[1]!==cur)go(+m[1]);});
+
+  judge();
+  var m0=/^#step-([1-6])$/.exec(location.hash);
+  go(m0?+m0[1]:1,true);
+})();
+</script>
+<script>document.getElementById("printRep").addEventListener("click", function(){ window.print(); });</script>
+
+</body></html>
